@@ -1,0 +1,182 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import Tabs from "@/components/ui/Tabs";
+import Pagination from "@/components/ui/Pagination";
+import Modal from "@/components/ui/Modal";
+
+const invoiceStatusMap: Record<string, { label: string; color: string }> = {
+  submitted: { label: "Đã nộp", color: "bg-blue-50 text-blue-600" },
+  under_review: { label: "Đang xem", color: "bg-amber-50 text-amber-600" },
+  approved: { label: "Đã duyệt", color: "bg-emerald-50 text-emerald-600" },
+  rejected: { label: "Từ chối", color: "bg-red-50 text-red-600" },
+  scheduled: { label: "Đã lên lịch", color: "bg-indigo-50 text-indigo-600" },
+  paid: { label: "Đã thanh toán", color: "bg-[#067643]/10 text-[#067643]" },
+  partially_paid: { label: "TT một phần", color: "bg-amber-50 text-amber-600" },
+};
+
+const debitStatusMap: Record<string, { label: string; color: string }> = {
+  issued: { label: "Đã phát hành", color: "bg-red-50 text-red-600" },
+  acknowledged: { label: "Đã xác nhận", color: "bg-amber-50 text-amber-600" },
+  disputed: { label: "Khiếu nại", color: "bg-orange-50 text-orange-600" },
+  resolved: { label: "Đã xử lý", color: "bg-emerald-50 text-emerald-600" },
+};
+
+export default function FinancePage() {
+  const { data: session } = useSession();
+  const user = session?.user as any;
+  const isSupermarket = user?.side === "supermarket";
+
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [debitNotes, setDebitNotes] = useState<any[]>([]);
+  const [invPage, setInvPage] = useState(1);
+  const [invTotalPages, setInvTotalPages] = useState(1);
+  const [dnPage, setDnPage] = useState(1);
+  const [dnTotalPages, setDnTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+
+  // Review modal
+  const [reviewModal, setReviewModal] = useState<{ open: boolean; invoice: any }>({ open: false, invoice: null });
+  const [reviewAction, setReviewAction] = useState<"approved" | "rejected">("approved");
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [reviewing, setReviewing] = useState(false);
+
+  useEffect(() => { fetchInvoices(); }, [invPage]); // eslint-disable-line
+  useEffect(() => { fetchDebitNotes(); }, [dnPage]); // eslint-disable-line
+
+  const fetchInvoices = async () => {
+    setLoading(true);
+    const res = await fetch(`/api/finance/invoices?page=${invPage}&pageSize=20`);
+    const json = await res.json();
+    if (json.success) { setInvoices(json.data.items); setInvTotalPages(json.data.totalPages); }
+    setLoading(false);
+  };
+
+  const fetchDebitNotes = async () => {
+    const res = await fetch(`/api/finance/debit-notes?page=${dnPage}&pageSize=20`);
+    const json = await res.json();
+    if (json.success) { setDebitNotes(json.data.items); setDnTotalPages(json.data.totalPages); }
+  };
+
+  const reviewInvoice = async () => {
+    if (!reviewModal.invoice) return;
+    setReviewing(true);
+    await fetch(`/api/finance/invoices/${reviewModal.invoice.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: reviewAction, reviewNotes }),
+    });
+    setReviewModal({ open: false, invoice: null }); setReviewNotes(""); setReviewing(false);
+    fetchInvoices();
+  };
+
+  const formatPrice = (p: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(p);
+  const inputClass = "w-full px-4 py-2.5 rounded-xl bg-white border border-green-200 text-[#00321B] text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#067643]/30";
+
+  const tabs = [
+    { key: "invoices", label: "Hóa đơn" },
+    { key: "debit-notes", label: "Phiếu ghi nợ" },
+  ];
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-[#00321B]">Tài chính</h1>
+        <p className="text-[#6B6B6B] mt-1">Quản lý hóa đơn, thanh toán và phiếu ghi nợ</p>
+      </div>
+
+      <Tabs tabs={tabs}>
+        {(tab) => (
+          <>
+            {tab === "invoices" && (
+              <div className="bg-white border border-green-100 rounded-2xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead><tr className="border-b border-green-100 bg-[#f8ffef]">
+                      <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase">Số HĐ</th>
+                      {isSupermarket && <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase">NCC</th>}
+                      <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase">PO</th>
+                      <th className="text-right px-6 py-4 text-xs font-semibold text-[#067643] uppercase">Tổng tiền</th>
+                      <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase">Ngày HĐ</th>
+                      <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase">Hạn TT</th>
+                      <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase">Trạng thái</th>
+                      {isSupermarket && <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase"></th>}
+                    </tr></thead>
+                    <tbody className="divide-y divide-green-50">
+                      {loading ? <tr><td colSpan={8} className="px-6 py-12 text-center text-[#6B6B6B]">Đang tải...</td></tr>
+                      : invoices.length === 0 ? <tr><td colSpan={8} className="px-6 py-12 text-center text-[#6B6B6B]">Chưa có hóa đơn</td></tr>
+                      : invoices.map((inv) => {
+                        const sc = invoiceStatusMap[inv.status] || { label: inv.status, color: "bg-gray-100 text-gray-600" };
+                        return (
+                          <tr key={inv.id} className="hover:bg-[#f8ffef]/60 transition-colors">
+                            <td className="px-6 py-4 text-[#00321B] text-sm font-mono">{inv.invoiceNumber}</td>
+                            {isSupermarket && <td className="px-6 py-4 text-[#6B6B6B] text-sm">{inv.vendor.companyName}</td>}
+                            <td className="px-6 py-4 text-[#6B6B6B] text-sm font-mono">{inv.purchaseOrder?.poNumber || "—"}</td>
+                            <td className="px-6 py-4 text-[#00321B] text-sm text-right font-mono">{formatPrice(Number(inv.totalAmount))}</td>
+                            <td className="px-6 py-4 text-[#6B6B6B] text-sm">{new Date(inv.invoiceDate).toLocaleDateString("vi-VN")}</td>
+                            <td className="px-6 py-4 text-[#6B6B6B] text-sm">{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("vi-VN") : "—"}</td>
+                            <td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${sc.color}`}>{sc.label}</span></td>
+                            {isSupermarket && <td className="px-6 py-4">
+                              {inv.status === "submitted" && <button onClick={() => setReviewModal({ open: true, invoice: inv })} className="text-[#067643] hover:text-[#01A258] text-xs font-medium transition-colors">Duyệt</button>}
+                            </td>}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination page={invPage} totalPages={invTotalPages} onPageChange={setInvPage} />
+              </div>
+            )}
+            {tab === "debit-notes" && (
+              <div className="bg-white border border-green-100 rounded-2xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead><tr className="border-b border-green-100 bg-[#f8ffef]">
+                      <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase">Số phiếu</th>
+                      {isSupermarket && <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase">NCC</th>}
+                      <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase">Lý do</th>
+                      <th className="text-right px-6 py-4 text-xs font-semibold text-[#067643] uppercase">Số tiền</th>
+                      <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase">Loại</th>
+                      <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase">Trạng thái</th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-green-50">
+                      {debitNotes.length === 0 ? <tr><td colSpan={6} className="px-6 py-12 text-center text-[#6B6B6B]">Chưa có phiếu ghi nợ</td></tr>
+                      : debitNotes.map((dn) => {
+                        const sc = debitStatusMap[dn.status] || { label: dn.status, color: "bg-gray-100 text-gray-600" };
+                        return (
+                          <tr key={dn.id} className="hover:bg-[#f8ffef]/60 transition-colors">
+                            <td className="px-6 py-4 text-[#00321B] text-sm font-mono">{dn.debitNoteNumber}</td>
+                            {isSupermarket && <td className="px-6 py-4 text-[#6B6B6B] text-sm">{dn.vendor.companyName}</td>}
+                            <td className="px-6 py-4 text-[#00321B] text-sm">{dn.reason}</td>
+                            <td className="px-6 py-4 text-red-600 text-sm text-right font-mono">-{formatPrice(Number(dn.amount))}</td>
+                            <td className="px-6 py-4 text-[#6B6B6B] text-sm">{dn.debitType === "penalty" ? "Phạt" : dn.debitType === "quality_deduction" ? "Chất lượng" : dn.debitType}</td>
+                            <td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${sc.color}`}>{sc.label}</span></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination page={dnPage} totalPages={dnTotalPages} onPageChange={setDnPage} />
+              </div>
+            )}
+          </>
+        )}
+      </Tabs>
+
+      <Modal open={reviewModal.open} onClose={() => { setReviewModal({ open: false, invoice: null }); setReviewNotes(""); }}
+        title={`Duyệt hóa đơn ${reviewModal.invoice?.invoiceNumber || ""}`}
+        actions={<><button onClick={() => { setReviewModal({ open: false, invoice: null }); setReviewNotes(""); }} className="px-4 py-2 rounded-xl bg-gray-100 text-[#6B6B6B] text-sm hover:text-[#00321B] transition-all">Hủy</button>
+          <button onClick={reviewInvoice} disabled={reviewing} className={`px-6 py-2 rounded-xl text-white text-sm font-medium transition-all disabled:opacity-50 ${reviewAction === "approved" ? "bg-[#067643]" : "bg-red-600"}`}>{reviewing ? "..." : reviewAction === "approved" ? "Duyệt" : "Từ chối"}</button></>}>
+        <div className="space-y-4">
+          <div className="flex gap-3">
+            <button onClick={() => setReviewAction("approved")} className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${reviewAction === "approved" ? "bg-[#067643]/15 text-[#067643] border border-[#067643]/30" : "bg-gray-50 text-[#6B6B6B] border border-transparent"}`}>✓ Duyệt</button>
+            <button onClick={() => setReviewAction("rejected")} className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${reviewAction === "rejected" ? "bg-red-50 text-red-600 border border-red-200" : "bg-gray-50 text-[#6B6B6B] border border-transparent"}`}>✗ Từ chối</button>
+          </div>
+          <textarea value={reviewNotes} onChange={(e) => setReviewNotes(e.target.value)} placeholder="Ghi chú..." rows={3} className={inputClass} />
+        </div>
+      </Modal>
+    </div>
+  );
+}

@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f0f7e6;
+  --foreground: #00321B;
+  --pm-primary: #067643;
+  --pm-primary-light: #01A258;
+  --pm-accent: #FF9811;
+  --pm-accent-hover: #E07B00;
+  --pm-bg: #f0f7e6;
+  --pm-card: #ffffff;
+  --pm-muted: #6B6B6B;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-montserrat);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Montserrat', Arial, Helvetica, sans-serif;
+}
