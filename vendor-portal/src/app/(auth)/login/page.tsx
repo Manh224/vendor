@@ -29,6 +29,25 @@ function LoginForm() {
     setLoading(true);
 
     try {
+      // Pre-validate to get specific error codes
+      const validateRes = await fetch("/api/auth/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!validateRes.ok) {
+        const data = await validateRes.json();
+        if (data.error === "ACCOUNT_SUSPENDED") {
+          setError("Tài khoản của bạn đang bị vô hiệu. Vui lòng liên hệ Pavelmart để được hỗ trợ");
+        } else {
+          setError("Tài khoản/ mật khẩu không đúng");
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Credentials valid — proceed with NextAuth signIn
       const result = await signIn("credentials", {
         email,
         password,
@@ -36,7 +55,7 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        setError(result.error);
+        setError("Tài khoản/ mật khẩu không đúng");
       } else {
         router.push(callbackUrl);
         router.refresh();
@@ -52,10 +71,12 @@ function LoginForm() {
     <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl p-8">
       {/* Header */}
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF9811] to-[#E07B00] mb-4 shadow-lg shadow-orange-500/25">
-          <span className="text-white font-extrabold text-xl">PM</span>
-        </div>
-        <h1 className="text-2xl font-bold text-white">Pavel Mart</h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo-pavelmart.png"
+          alt="Pavel Mart"
+          className="h-12 mx-auto mb-4"
+        />
         <p className="text-white/60 mt-1">Đăng nhập Vendor Portal</p>
       </div>
 

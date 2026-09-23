@@ -11,10 +11,20 @@ export async function GET(request: NextRequest) {
   const page = parseInt(sp.get("page") || "1");
   const pageSize = parseInt(sp.get("pageSize") || "20");
   const status = sp.get("status");
+  const search = sp.get("search");
+  const debitType = sp.get("debitType");
 
   const where: any = {};
   if (user.side === "vendor") where.vendorId = user.vendorId;
   if (status) where.status = status;
+  if (debitType) where.debitType = debitType;
+  if (search) {
+    where.OR = [
+      { debitNoteNumber: { contains: search, mode: "insensitive" } },
+      { reason: { contains: search, mode: "insensitive" } },
+      { vendor: { companyName: { contains: search, mode: "insensitive" } } },
+    ];
+  }
 
   const [items, total] = await Promise.all([
     prisma.debitNote.findMany({

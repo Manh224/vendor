@@ -508,6 +508,7 @@ model PurchaseOrder {
   items         PurchaseOrderItem[]
   asns          AdvanceShippingNotice[]
   goodsReceipts GoodsReceipt[]
+  invoices      Invoice[]
   debitNotes    DebitNote[]
 
   @@index([vendorId])
@@ -605,6 +606,7 @@ model GoodsReceipt {
 model Invoice {
   id              String   @id @default(uuid()) @db.Uuid
   vendorId        String   @map("vendor_id") @db.Uuid
+  purchaseOrderId String?  @map("purchase_order_id") @db.Uuid
   invoiceNumber   String   @map("invoice_number") @db.VarChar(50)
   invoiceSymbol   String?  @map("invoice_symbol") @db.VarChar(20)
   invoiceDate     DateTime @map("invoice_date") @db.Date
@@ -636,14 +638,16 @@ model Invoice {
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  vendor  Vendor @relation(fields: [vendorId], references: [id])
-  creator User?  @relation("InvoiceCreator", fields: [createdBy], references: [id])
+  vendor        Vendor         @relation(fields: [vendorId], references: [id])
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  creator       User?          @relation("InvoiceCreator", fields: [createdBy], references: [id])
 
   items           InvoiceItem[]
   reconciliations Reconciliation[]
   debitNotes      DebitNote[]
 
   @@index([vendorId])
+  @@index([purchaseOrderId])
   @@index([paymentStatus])
   @@index([paymentDueDate])
   @@map("invoices")

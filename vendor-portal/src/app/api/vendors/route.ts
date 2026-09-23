@@ -11,6 +11,18 @@ export async function GET(request: NextRequest) {
 
   const user = session.user as any;
   const searchParams = request.nextUrl.searchParams;
+
+  // Simple mode: return just id + companyName for dropdowns
+  const simple = searchParams.get("simple");
+  if (simple === "true") {
+    const vendors = await prisma.vendor.findMany({
+      where: { deletedAt: null },
+      select: { id: true, companyName: true },
+      orderBy: { companyName: "asc" },
+    });
+    return NextResponse.json({ success: true, data: vendors });
+  }
+
   const page = parseInt(searchParams.get("page") || "1");
   const pageSize = parseInt(searchParams.get("pageSize") || "20");
   const status = searchParams.get("status");

@@ -10,11 +10,17 @@ export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const vendorId = sp.get("vendorId");
   const period = sp.get("period");
+  const search = sp.get("search");
+  const ranking = sp.get("ranking");
 
   const where: any = {};
   if (user.side === "vendor") where.vendorId = user.vendorId;
   else if (vendorId) where.vendorId = vendorId;
   if (period) where.period = period;
+  if (ranking) where.ranking = ranking;
+  if (search) {
+    where.vendor = { companyName: { contains: search, mode: "insensitive" } };
+  }
 
   const scores = await prisma.kpiScore.findMany({
     where,

@@ -233,6 +233,70 @@ async function main() {
   }
 
   console.log(`✅ Created ${permCount} permissions`);
+
+  // ============================================================================
+  // 7. Assign Permissions to Roles
+  // ============================================================================
+  const allPerms = await prisma.permission.findMany();
+  const permMap = new Map(allPerms.map(p => [`${p.module}.${p.action}`, p.id]));
+
+  // Helper to get permission IDs from module.action keys
+  const getPermIds = (keys: string[]) => keys.map(k => permMap.get(k)).filter(Boolean) as string[];
+
+  const rolePermAssignments: Record<string, string[]> = {
+    // Admin siêu thị: toàn quyền
+    supermarket_admin: allPerms.map(p => p.id),
+    // Nhân viên mua hàng: quản lý NCC, sản phẩm, đơn hàng
+    buyer: getPermIds([
+      "vendors.view", "vendors.create", "vendors.edit", "vendors.approve",
+      "products.view", "products.create", "products.edit", "products.delete",
+      "orders.view", "orders.create", "orders.edit", "orders.approve",
+    ]),
+    // Kế toán: quản lý tài chính, xem đơn hàng
+    accountant: getPermIds([
+      "finance.view", "finance.create", "finance.edit", "finance.approve",
+      "orders.view",
+      "vendors.view",
+    ]),
+    // Nhân viên kho: quản lý nhận hàng, xem sản phẩm
+    warehouse: getPermIds([
+      "orders.view", "orders.edit",
+      "products.view",
+      "vendors.view",
+    ]),
+    // Quản trị NCC: toàn quyền phía vendor
+    vendor_admin: getPermIds([
+      "products.view", "products.create", "products.edit", "products.delete",
+      "orders.view", "orders.edit",
+      "finance.view", "finance.create",
+      "support.view", "support.create",
+    ]),
+    // Nhân viên KD NCC
+    vendor_sales: getPermIds([
+      "products.view", "products.create", "products.edit",
+      "orders.view", "orders.edit",
+    ]),
+    // Kế toán NCC
+    vendor_accountant: getPermIds([
+      "finance.view", "finance.create",
+      "orders.view",
+    ]),
+  };
+
+  let rpCount = 0;
+  for (const role of roles) {
+    const permIds = rolePermAssignments[role.name] || [];
+    if (permIds.length > 0) {
+      // Delete existing then recreate
+      await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
+      await prisma.rolePermission.createMany({
+        data: permIds.map(permissionId => ({ roleId: role.id, permissionId })),
+      });
+      rpCount += permIds.length;
+    }
+  }
+
+  console.log(`✅ Assigned ${rpCount} role-permissions`);
   console.log("\n🎉 Seeding completed!");
 }
 

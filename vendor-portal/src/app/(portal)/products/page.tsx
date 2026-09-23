@@ -18,6 +18,7 @@ interface ProductItem {
   id: string;
   name: string;
   sku: string | null;
+  barcodes: string[];
   currentPrice: number | null;
   status: string;
   unit: string | null;
@@ -119,6 +120,7 @@ export default function ProductsPage() {
               <tr className="border-b border-green-100 bg-[#f8ffef]">
                 <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase tracking-wider">Sản phẩm</th>
                 <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase tracking-wider">SKU</th>
+                <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase tracking-wider">Barcode</th>
                 {!isVendor && <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase tracking-wider">NCC</th>}
                 <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase tracking-wider">Danh mục</th>
                 <th className="text-right px-6 py-4 text-xs font-semibold text-[#067643] uppercase tracking-wider">Giá</th>
@@ -137,6 +139,14 @@ export default function ProductsPage() {
                     {p.unit && <p className="text-gray-400 text-xs">ĐVT: {p.unit}</p>}
                   </td>
                   <td className="px-6 py-4 text-[#00321B] text-sm font-mono">{p.sku || "—"}</td>
+                  <td className="px-6 py-4 text-[#6B6B6B] text-sm font-mono">
+                    {Array.isArray(p.barcodes) && p.barcodes.length > 0 ? (
+                      <span title={p.barcodes.join(", ")}>
+                        {p.barcodes[0]}
+                        {p.barcodes.length > 1 && <span className="text-xs text-gray-400 ml-1">+{p.barcodes.length - 1}</span>}
+                      </span>
+                    ) : "—"}
+                  </td>
                   {!isVendor && <td className="px-6 py-4 text-[#6B6B6B] text-sm">{p.vendor.companyName}</td>}
                   <td className="px-6 py-4 text-[#6B6B6B] text-sm">{p.category?.name || "—"}</td>
                   <td className="px-6 py-4 text-[#00321B] text-sm text-right font-mono">{formatPrice(p.currentPrice)}</td>

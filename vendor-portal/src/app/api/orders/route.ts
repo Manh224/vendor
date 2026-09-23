@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         vendor: { select: { id: true, companyName: true } },
+        invoices: { select: { id: true, invoiceNumber: true } },
         _count: { select: { items: true, asns: true, goodsReceipts: true } },
       },
       orderBy: { createdAt: "desc" },

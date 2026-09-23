@@ -26,11 +26,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         });
 
         if (!user || user.deletedAt) {
-          throw new Error("Email hoặc mật khẩu không đúng");
+          throw new Error("INVALID_CREDENTIALS");
         }
 
         if (!user.isActive) {
-          throw new Error("Tài khoản đã bị khóa");
+          throw new Error("ACCOUNT_SUSPENDED");
         }
 
         if (user.lockedUntil && user.lockedUntil > new Date()) {
@@ -54,7 +54,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               }),
             },
           });
-          throw new Error("Email hoặc mật khẩu không đúng");
+          throw new Error("INVALID_CREDENTIALS");
         }
 
         // Reset failed login count and update last login

@@ -1,6 +1,14 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  const session = await auth();
+  const role = (session?.user as any)?.role;
+  if (role !== "supermarket_admin") {
+    redirect("/dashboard");
+  }
+
   const sections = [
     {
       title: "Quản lý tài khoản",

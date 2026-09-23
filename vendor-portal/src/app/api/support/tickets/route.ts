@@ -12,11 +12,20 @@ export async function GET(request: NextRequest) {
   const pageSize = parseInt(sp.get("pageSize") || "20");
   const status = sp.get("status");
   const priority = sp.get("priority");
+  const category = sp.get("category");
+  const search = sp.get("search");
 
   const where: any = {};
   if (user.side === "vendor") where.createdBy = user.id;
   if (status) where.status = status;
   if (priority) where.priority = priority;
+  if (category) where.category = category;
+  if (search) {
+    where.OR = [
+      { ticketNumber: { contains: search, mode: "insensitive" } },
+      { title: { contains: search, mode: "insensitive" } },
+    ];
+  }
 
   const [items, total] = await Promise.all([
     prisma.ticket.findMany({

@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         vendor: { select: { id: true, companyName: true } },
+        purchaseOrder: { select: { id: true, poNumber: true, status: true, totalAmount: true, orderDate: true } },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,

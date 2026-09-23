@@ -28,6 +28,7 @@ interface POItem {
   expectedDeliveryDate: string | null;
   isReturnOrder: boolean;
   vendor: { id: string; companyName: string };
+  invoices: { id: string; invoiceNumber: string }[];
   _count: { items: number; asns: number; goodsReceipts: number };
 }
 
@@ -114,6 +115,7 @@ export default function OrdersPage() {
               <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase tracking-wider">Ngày đặt</th>
               <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase tracking-wider">Giao hàng</th>
               <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase tracking-wider">Trạng thái</th>
+              <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase tracking-wider">Mã HĐ</th>
               <th className="text-center px-6 py-4 text-xs font-semibold text-[#067643] uppercase tracking-wider">SP</th>
             </tr></thead>
             <tbody className="divide-y divide-green-50">
@@ -134,6 +136,17 @@ export default function OrdersPage() {
                     <td className="px-6 py-4 text-[#6B6B6B] text-sm">{new Date(o.orderDate).toLocaleDateString("vi-VN")}</td>
                     <td className="px-6 py-4 text-[#6B6B6B] text-sm">{o.expectedDeliveryDate ? new Date(o.expectedDeliveryDate).toLocaleDateString("vi-VN") : "—"}</td>
                     <td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${sc.color}`}>{sc.label}</span></td>
+                    <td className="px-6 py-4 text-sm font-mono">
+                      {(o.status === "completed" || o.status === "partially_received") && o.invoices.length > 0 ? (
+                        <div className="flex flex-col gap-0.5">
+                          {o.invoices.map((inv) => (
+                            <span key={inv.id} className="text-[#067643] hover:text-[#01A258] cursor-pointer">{inv.invoiceNumber}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-[#6B6B6B]">—</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-center text-[#6B6B6B] text-sm">{o._count.items}</td>
                   </tr>
                 );

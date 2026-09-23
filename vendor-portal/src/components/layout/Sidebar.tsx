@@ -32,7 +32,9 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
 
   const side = (session?.user as any)?.side;
-  const nav = side === "vendor" ? vendorNav : supermarketNav;
+  const role = (session?.user as any)?.role;
+  const navItems = side === "vendor" ? vendorNav : supermarketNav;
+  const nav = role === "supermarket_admin" ? navItems : navItems.filter(item => item.href !== "/admin");
   const roleName = (session?.user as any)?.roleName || "User";
   const vendorName = (session?.user as any)?.vendorName;
 
@@ -43,13 +45,13 @@ export default function Sidebar() {
       } bg-[#067643] flex flex-col transition-all duration-300 h-screen sticky top-0 shadow-xl`}
     >
       {/* Logo */}
-      <div className="h-16 flex items-center px-4 border-b border-white/15">
-        <Link href="/dashboard" className="flex items-center gap-2">
+      <div className="h-16 flex items-center justify-center px-4 border-b border-white/15">
+        <Link href="/dashboard" className="flex items-center" title={collapsed ? "Siêu thị PAVEL MART" : undefined}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo-pavelmart.png"
+            src={collapsed ? "/icon-pavelmart.svg" : "/logo-pavelmart.png"}
             alt="Pavel Mart"
-            className={`object-contain flex-shrink-0 h-10 ${collapsed ? "w-10" : "w-40"} transition-all duration-300`}
+            className={`object-contain flex-shrink-0 h-10 transition-all duration-300`}
           />
         </Link>
       </div>
@@ -63,6 +65,7 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              title={collapsed ? item.name : undefined}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
                 isActive
                   ? "bg-white/15 text-white font-semibold shadow-sm"
@@ -90,15 +93,18 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* User info & collapse */}
+      {/* User info & actions */}
       <div className="border-t border-white/15 p-3">
-        {!collapsed && (
-          <div className="flex items-center gap-3 px-3 py-2 mb-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF9811] to-[#E07B00] flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-xs font-bold">
-                {session?.user?.name?.charAt(0)?.toUpperCase() || "U"}
-              </span>
-            </div>
+        <div
+          className={`flex items-center gap-3 px-3 py-2 mb-2 ${collapsed ? "justify-center" : ""}`}
+          title={collapsed ? `${session?.user?.name || "User"}\n${vendorName || roleName}` : undefined}
+        >
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF9811] to-[#E07B00] flex items-center justify-center flex-shrink-0 cursor-default">
+            <span className="text-white text-xs font-bold">
+              {session?.user?.name?.charAt(0)?.toUpperCase() || "U"}
+            </span>
+          </div>
+          {!collapsed && (
             <div className="min-w-0">
               <p className="text-white text-sm font-medium truncate">
                 {session?.user?.name}
@@ -107,28 +113,32 @@ export default function Sidebar() {
                 {vendorName || roleName}
               </p>
             </div>
-          </div>
-        )}
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all text-sm"
-          >
-            <svg className={`w-4 h-4 transition-transform ${collapsed ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-            </svg>
-          </button>
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex items-center justify-center px-3 py-2 rounded-lg text-white/70 hover:text-red-300 hover:bg-red-500/20 transition-all"
-            title="Đăng xuất"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </button>
+          )}
         </div>
+
+        {/* Collapse button */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          title={collapsed ? "Mở rộng" : undefined}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all text-sm"
+        >
+          <svg className={`w-4 h-4 transition-transform ${collapsed ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+          </svg>
+          {!collapsed && <span>Thu gọn</span>}
+        </button>
+
+        {/* Logout button — separated with min 20px gap */}
+        <button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="w-full flex items-center justify-center gap-2 mt-5 px-3 py-2 rounded-lg text-white/70 hover:text-red-300 hover:bg-red-500/20 transition-all text-sm"
+          title="Đăng xuất"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          {!collapsed && <span>Đăng xuất</span>}
+        </button>
       </div>
     </aside>
   );

@@ -11,7 +11,7 @@ const poStatusMap: Record<string, { label: string; color: string }> = {
   rejected: { label: "NCC từ chối", color: "bg-red-500/10 text-red-600" }, modification_requested: { label: "Yêu cầu sửa", color: "bg-orange-500/10 text-orange-400" },
   preparing: { label: "Đang chuẩn bị", color: "bg-cyan-500/10 text-cyan-400" }, shipped: { label: "Đang giao", color: "bg-violet-500/10 text-violet-400" },
   received: { label: "Đã nhận", color: "bg-emerald-50 text-emerald-600" }, partially_received: { label: "Nhận 1 phần", color: "bg-amber-50 text-amber-600" },
-  completed: { label: "Hoàn thành", color: "bg-emerald-500/10 text-emerald-300" }, cancelled: { label: "Đã hủy", color: "bg-red-500/10 text-red-300" },
+  completed: { label: "Hoàn thành", color: "bg-emerald-500/10 text-emerald-600" }, cancelled: { label: "Đã hủy", color: "bg-red-500/10 text-red-500" },
 };
 
 export default function OrderDetailPage() {
@@ -131,7 +131,7 @@ export default function OrderDetailPage() {
         ].map((s) => (
           <div key={s.label} className="bg-white border border-green-100 shadow-sm rounded-2xl p-4">
             <p className="text-gray-400 text-xs">{s.label}</p>
-            <p className="text-white text-lg font-semibold mt-1">{s.value}</p>
+            <p className="text-[#00321B] text-lg font-semibold mt-1">{s.value}</p>
           </div>
         ))}
       </div>
@@ -165,7 +165,7 @@ export default function OrderDetailPage() {
               {tab === "asn" && (
                 <div>
                   {showAsnForm && (
-                    <form onSubmit={submitAsn} className="border border-slate-800 rounded-xl p-4 mb-4 space-y-3">
+                    <form onSubmit={submitAsn} className="border border-green-100 rounded-xl p-4 mb-4 space-y-3">
                       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                         <input placeholder="Số ASN *" required value={asnForm.asnNumber} onChange={(e) => setAsnForm({ ...asnForm, asnNumber: e.target.value })} className={inputClass} />
                         <input placeholder="Nhà vận chuyển" value={asnForm.carrierName} onChange={(e) => setAsnForm({ ...asnForm, carrierName: e.target.value })} className={inputClass} />
@@ -176,14 +176,14 @@ export default function OrderDetailPage() {
                       </div>
                       <div className="flex gap-2">
                         <button type="submit" disabled={savingAsn} className="px-4 py-2 rounded-xl bg-emerald-600 text-[#00321B] text-sm font-medium hover:bg-emerald-500 transition-all disabled:opacity-50">{savingAsn ? "Đang tạo..." : "Tạo ASN"}</button>
-                        <button type="button" onClick={() => setShowAsnForm(false)} className="px-4 py-2 rounded-xl bg-white/5 text-[#6B6B6B] text-sm hover:text-white transition-all">Hủy</button>
+                        <button type="button" onClick={() => setShowAsnForm(false)} className="px-4 py-2 rounded-xl bg-white/5 text-[#6B6B6B] text-sm hover:text-[#00321B] transition-all">Hủy</button>
                       </div>
                     </form>
                   )}
                   {order.asns.length === 0 ? <p className="text-[#6B6B6B] text-sm">Chưa có ASN</p> : (
                     <div className="space-y-3">{order.asns.map((asn: any) => (
-                      <div key={asn.id} className="border border-slate-800 rounded-xl p-4">
-                        <div className="flex justify-between"><p className="text-white font-medium text-sm">ASN: {asn.asnNumber}</p><span className="text-xs text-slate-400">{new Date(asn.scheduledDate).toLocaleDateString("vi-VN")}</span></div>
+                      <div key={asn.id} className="border border-green-100 rounded-xl p-4">
+                        <div className="flex justify-between"><p className="text-[#00321B] font-medium text-sm">ASN: {asn.asnNumber}</p><span className="text-xs text-slate-400">{new Date(asn.scheduledDate).toLocaleDateString("vi-VN")}</span></div>
                         <p className="text-gray-400 text-xs mt-1">{[asn.carrierName, asn.vehiclePlate, asn.driverName].filter(Boolean).join(" • ") || "—"}</p>
                       </div>
                     ))}</div>
@@ -193,7 +193,7 @@ export default function OrderDetailPage() {
               {tab === "grn" && (
                 <div>
                   {showGrnForm && (
-                    <form onSubmit={submitGrn} className="border border-slate-800 rounded-xl p-4 mb-4 space-y-3">
+                    <form onSubmit={submitGrn} className="border border-green-100 rounded-xl p-4 mb-4 space-y-3">
                       <div className="grid grid-cols-2 gap-3">
                         <input placeholder="Số GRN *" required value={grnForm.grnNumber} onChange={(e) => setGrnForm({ ...grnForm, grnNumber: e.target.value })} className={inputClass} />
                         <select value={grnForm.receiptStatus} onChange={(e) => setGrnForm({ ...grnForm, receiptStatus: e.target.value })} className={inputClass}>
@@ -205,14 +205,14 @@ export default function OrderDetailPage() {
                       <textarea placeholder="Ghi chú" rows={2} value={grnForm.notes} onChange={(e) => setGrnForm({ ...grnForm, notes: e.target.value })} className={inputClass} />
                       <div className="flex gap-2">
                         <button type="submit" disabled={savingGrn} className="px-4 py-2 rounded-xl bg-emerald-600 text-[#00321B] text-sm font-medium hover:bg-emerald-500 transition-all disabled:opacity-50">{savingGrn ? "Đang tạo..." : "Tạo GRN"}</button>
-                        <button type="button" onClick={() => setShowGrnForm(false)} className="px-4 py-2 rounded-xl bg-white/5 text-[#6B6B6B] text-sm hover:text-white transition-all">Hủy</button>
+                        <button type="button" onClick={() => setShowGrnForm(false)} className="px-4 py-2 rounded-xl bg-white/5 text-[#6B6B6B] text-sm hover:text-[#00321B] transition-all">Hủy</button>
                       </div>
                     </form>
                   )}
                   {order.goodsReceipts.length === 0 ? <p className="text-[#6B6B6B] text-sm">Chưa có GRN</p> : (
                     <div className="space-y-3">{order.goodsReceipts.map((grn: any) => (
-                      <div key={grn.id} className="border border-slate-800 rounded-xl p-4">
-                        <div className="flex justify-between"><p className="text-white font-medium text-sm">GRN: {grn.grnNumber}</p>
+                      <div key={grn.id} className="border border-green-100 rounded-xl p-4">
+                        <div className="flex justify-between"><p className="text-[#00321B] font-medium text-sm">GRN: {grn.grnNumber}</p>
                           <span className={`text-xs font-medium ${grn.receiptStatus === "full" ? "text-emerald-600" : grn.receiptStatus === "partial" ? "text-amber-600" : "text-red-600"}`}>{grn.receiptStatus === "full" ? "Đủ" : grn.receiptStatus === "partial" ? "Một phần" : "Từ chối"}</span></div>
                         <p className="text-gray-400 text-xs mt-1">Nhận bởi: {grn.receiver?.fullName || "—"} • {new Date(grn.receivedDate).toLocaleDateString("vi-VN")}</p>
                         {grn.notes && <p className="text-gray-400 text-xs mt-1">{grn.notes}</p>}

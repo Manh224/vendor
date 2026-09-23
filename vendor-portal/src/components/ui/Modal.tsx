@@ -8,9 +8,10 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   actions?: React.ReactNode;
+  maxWidth?: string;
 }
 
-export default function Modal({ open, onClose, title, children, actions }: ModalProps) {
+export default function Modal({ open, onClose, title, children, actions, maxWidth = "max-w-lg" }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export default function Modal({ open, onClose, title, children, actions }: Modal
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
       {/* Dialog */}
-      <div className="relative bg-white border border-green-200 rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-in fade-in zoom-in-95 duration-200">
+      <div className={`relative bg-white border border-green-200 rounded-2xl shadow-2xl w-full ${maxWidth} mx-4 animate-in fade-in zoom-in-95 duration-200`}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-green-100">
           <h3 className="text-lg font-semibold text-[#00321B]">{title}</h3>
