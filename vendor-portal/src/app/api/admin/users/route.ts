@@ -18,14 +18,14 @@ export async function GET() {
 
   return NextResponse.json({
     success: true,
-    data: users.map((u) => ({
+    data: users.map((u: any) => ({
       id: u.id,
       email: u.email,
       fullName: u.fullName,
       phone: u.phone,
       side: u.side,
-      role: u.role.displayName,
-      roleName: u.role.name,
+      role: u.role?.displayName || u.role,
+      roleName: u.role?.name || u.roleName,
       vendorName: u.vendor?.companyName || null,
       isActive: u.isActive,
       lastLoginAt: u.lastLoginAt,
