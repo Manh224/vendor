@@ -73,7 +73,7 @@ function LoginForm() {
       <div className="text-center mb-8">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/logo-pavelmart.png"
+          src="https://raw.githubusercontent.com/Manh224/vendor/refs/heads/main/vendor-portal/public/logo-pavelmart.png"
           alt="Pavel Mart"
           className="h-12 mx-auto mb-4"
         />
