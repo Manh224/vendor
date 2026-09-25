@@ -108,6 +108,67 @@ export async function POST(request: Request) {
   }
 }
 
+// DELETE /api/admin/users — Soft-delete a user
+export async function DELETE(request: Request) {
+  try {
+    const session = await auth();
+    if (!session || (session.user as any)?.role !== "supermarket_admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+
+    if (!userId) {
+      return NextResponse.json({ error: "Thiếu userId" }, { status: 400 });
+    }
+
+    // Prevent admin from deleting themselves
+    if (userId === session.user?.id) {
+      return NextResponse.json({ error: "Không thể xóa chính mình" }, { status: 400 });
+    }
+
+    const targetUser = await prisma.user.findUnique({ where: { id: userId }, include: { role: true } });
+    if (!targetUser || targetUser.deletedAt) {
+      return NextResponse.json({ error: "Tài khoản không tồn tại" }, { status: 404 });
+    }
+
+    // Prevent deleting other supermarket_admin accounts
+    if ((targetUser.role as any)?.name === "supermarket_admin") {
+      return NextResponse.json({ error: "Không thể xóa tài khoản Quản trị viên siêu thị" }, { status: 400 });
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { deletedAt: new Date(), isActive: false },
+    });
+
+    // Audit log (non-blocking)
+    try {
+      const adminUser = await prisma.user.findUnique({ where: { id: session.user?.id as string } });
+      if (adminUser) {
+        await prisma.auditLog.create({
+          data: {
+            userId: adminUser.id,
+            action: "DELETE",
+            module: "admin",
+            resource: "users",
+            resourceId: userId,
+            description: `Admin xóa tài khoản ${targetUser.email}`,
+          },
+        });
+      }
+    } catch (auditErr) {
+      console.warn("Audit log failed (non-blocking):", auditErr);
+    }
+
+    return NextResponse.json({ success: true, data: { id: userId } });
+  } catch (error: any) {
+    console.error("DELETE /api/admin/users error:", error);
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+  }
+}
+
 // PATCH /api/admin/users — Toggle user active status (suspend/reactivate)
 export async function PATCH(request: Request) {
   try {
