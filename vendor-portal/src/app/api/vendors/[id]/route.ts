@@ -28,7 +28,7 @@ export async function GET(
         statusChangedByUser: { select: { fullName: true } },
       },
     }),
-    prisma.contact.findMany({
+    prisma.vendorContact.findMany({
       where: { vendorId: id },
       orderBy: { isPrimary: "desc" },
     }),
