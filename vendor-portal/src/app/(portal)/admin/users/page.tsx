@@ -47,6 +47,7 @@ export default function AdminUsersPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [form, setForm] = useState({
     email: "", fullName: "", phone: "", side: "supermarket" as string,
     roleName: "buyer", vendorId: "", password: "",
@@ -135,6 +136,34 @@ export default function AdminUsersPage() {
       alert("Có lỗi xảy ra. Vui lòng thử lại.");
     } finally {
       setToggling(null);
+    }
+  };
+
+  const deleteUser = async (userId: string, email: string) => {
+    if (!confirm(`Bạn có chắc muốn xóa tài khoản "${email}"?\nHành động này không thể hoàn tác.`)) return;
+
+    setDeleting(userId);
+    try {
+      const res = await fetch(`/api/admin/users?userId=${userId}`, { method: "DELETE" });
+
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        alert("Phiên đăng nhập hết hạn. Vui lòng tải lại trang.");
+        window.location.reload();
+        return;
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        setUsers(users.filter(u => u.id !== userId));
+      } else {
+        alert(data.error || "Có lỗi xảy ra");
+      }
+    } catch (err) {
+      console.error("Delete user error:", err);
+      alert("Có lỗi xảy ra. Vui lòng thử lại.");
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -272,21 +301,30 @@ export default function AdminUsersPage() {
                       {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString("vi-VN") : "Chưa đăng nhập"}
                     </td>
                     {isSuperAdmin && (
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-4">
                         {user.id !== currentUserId && user.roleName !== "supermarket_admin" ? (
-                          <button
-                            onClick={() => toggleActive(user.id, user.isActive)}
-                            disabled={toggling === user.id}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 ${
-                              user.isActive
-                                ? "bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200"
-                                : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200"
-                            }`}
-                          >
-                            {toggling === user.id ? "..." : user.isActive ? "Tạm dừng" : "Kích hoạt lại"}
-                          </button>
+                          <div className="flex items-center gap-2 justify-center">
+                            <button
+                              onClick={() => toggleActive(user.id, user.isActive)}
+                              disabled={toggling === user.id || deleting === user.id}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 ${
+                                user.isActive
+                                  ? "bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200"
+                                  : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200"
+                              }`}
+                            >
+                              {toggling === user.id ? "..." : user.isActive ? "Tạm dừng" : "Kích hoạt lại"}
+                            </button>
+                            <button
+                              onClick={() => deleteUser(user.id, user.email)}
+                              disabled={toggling === user.id || deleting === user.id}
+                              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
+                            >
+                              {deleting === user.id ? "..." : "Xóa"}
+                            </button>
+                          </div>
                         ) : (
-                          <span className="text-xs text-gray-400">—</span>
+                          <span className="text-xs text-gray-400 block text-center">—</span>
                         )}
                       </td>
                     )}
