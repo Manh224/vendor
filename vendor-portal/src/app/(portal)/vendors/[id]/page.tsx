@@ -128,6 +128,10 @@ export default function VendorDetailPage() {
   const [statusNotes, setStatusNotes] = useState("");
   const [changingStatus, setChangingStatus] = useState(false);
 
+  // Delete vendor modal
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   // Contact form
   const [showContactForm, setShowContactForm] = useState(false);
   const [contactForm, setContactForm] = useState({ fullName: "", position: "", email: "", phone: "", isPrimary: false });
@@ -299,6 +303,25 @@ export default function VendorDetailPage() {
     setSavingContract(false);
   };
 
+  const deleteVendor = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/vendors/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        router.push("/vendors");
+      } else {
+        alert(data.error || "Có lỗi xảy ra");
+        setDeleteModal(false);
+      }
+    } catch {
+      alert("Có lỗi xảy ra. Vui lòng thử lại.");
+      setDeleteModal(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center py-20 text-[#6B6B6B]">Đang tải...</div>;
   }
@@ -309,6 +332,8 @@ export default function VendorDetailPage() {
 
   const canEdit = isSupermarket || ["pending_registration", "requires_supplement", "active"].includes(vendor.status);
   const actions = isSupermarket ? (statusActions[vendor.status] || []) : [];
+  const isSuperAdmin = user?.role === "supermarket_admin";
+  const canDelete = isSuperAdmin && ["pending_registration", "pending_review"].includes(vendor.status);
 
   const inputClass = "w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[#00321B] text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50";
 
@@ -336,20 +361,59 @@ export default function VendorDetailPage() {
         </div>
 
         {/* Action buttons */}
-        {actions.length > 0 && (
-          <div className="flex gap-2">
-            {actions.map((action) => (
-              <button
-                key={action.nextStatus}
-                onClick={() => setStatusModal({ open: true, action })}
-                className={`px-4 py-2 rounded-xl text-[#00321B] text-sm font-medium transition-all ${action.color}`}
-              >
-                {action.label}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex gap-2">
+          {actions.map((action) => (
+            <button
+              key={action.nextStatus}
+              onClick={() => setStatusModal({ open: true, action })}
+              className={`px-4 py-2 rounded-xl text-white text-sm font-medium transition-all ${action.color}`}
+            >
+              {action.label}
+            </button>
+          ))}
+          {canDelete && (
+            <button
+              onClick={() => setDeleteModal(true)}
+              className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-all"
+            >
+              🗑 Xóa NCC
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Delete confirmation modal */}
+      {deleteModal && vendor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <span className="text-red-600 text-lg">⚠️</span>
+              </div>
+              <h3 className="text-[#00321B] font-semibold text-lg">Xóa Nhà cung cấp</h3>
+            </div>
+            <p className="text-[#444] text-sm leading-relaxed mb-6">
+              Bạn có muốn xóa Nhà cung cấp <strong>{vendor.companyName}</strong> khỏi hệ thống vendorportal của Pavelmart không?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteModal(false)}
+                disabled={deleting}
+                className="px-4 py-2 rounded-xl bg-gray-100 text-[#6B6B6B] text-sm hover:bg-gray-200 transition-all disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={deleteVendor}
+                disabled={deleting}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-all disabled:opacity-50"
+              >
+                {deleting ? "Đang xóa..." : "Xác nhận xóa"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs content */}
       <Tabs tabs={tabs}>
