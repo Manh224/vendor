@@ -62,6 +62,17 @@ export async function PATCH(
     },
   });
 
+  // Sync user isActive based on vendor status
+  const shouldActivateUsers = newStatus === "active";
+  const shouldDeactivateUsers = newStatus === "suspended" || newStatus === "terminated";
+
+  if (shouldActivateUsers || shouldDeactivateUsers) {
+    await prisma.user.updateMany({
+      where: { vendorId: id, deletedAt: null },
+      data: { isActive: shouldActivateUsers },
+    });
+  }
+
   // Audit log
   await prisma.auditLog.create({
     data: {

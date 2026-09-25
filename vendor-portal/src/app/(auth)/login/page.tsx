@@ -38,7 +38,9 @@ function LoginForm() {
 
       if (!validateRes.ok) {
         const data = await validateRes.json();
-        if (data.error === "ACCOUNT_SUSPENDED") {
+        if (data.error === "ACCOUNT_PENDING") {
+          setError("Tài khoản đang chờ admin kích hoạt. Vui lòng liên hệ Pavelmart để được hỗ trợ");
+        } else if (data.error === "ACCOUNT_SUSPENDED") {
           setError("Tài khoản của bạn đang bị vô hiệu. Vui lòng liên hệ Pavelmart để được hỗ trợ");
         } else {
           setError("Tài khoản/ mật khẩu không đúng");

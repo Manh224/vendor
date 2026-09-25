@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         },
       });
 
-      // Create user
+      // Create user (inactive by default, admin must activate)
       const user = await tx.user.create({
         data: {
           email,
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
           roleId: vendorAdminRole.id,
           vendorId: vendor.id,
           side: "vendor",
-          isActive: true,
+          isActive: false,
         },
       });
 
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: true,
-        message: "Đăng ký thành công! Vui lòng đăng nhập để hoàn thiện hồ sơ.",
+        message: "Đăng ký thành công! Tài khoản đang chờ admin kích hoạt. Bạn sẽ nhận thông báo khi tài khoản được duyệt.",
         data: {
           vendorId: result.vendor.id,
           userId: result.user.id,

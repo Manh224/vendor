@@ -13,6 +13,7 @@ export async function POST(request: Request) {
 
   const user = await prisma.user.findUnique({
     where: { email },
+    include: { vendor: { select: { status: true } } },
   });
 
   if (!user || user.deletedAt) {
@@ -20,6 +21,10 @@ export async function POST(request: Request) {
   }
 
   if (!user.isActive) {
+    // Vendor registered but not yet activated by admin
+    if (user.vendor?.status === "pending_registration") {
+      return NextResponse.json({ error: "ACCOUNT_PENDING" }, { status: 403 });
+    }
     return NextResponse.json({ error: "ACCOUNT_SUSPENDED" }, { status: 403 });
   }
 
