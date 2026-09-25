@@ -35,6 +35,7 @@ export default function FinancePage() {
   const [dnPage, setDnPage] = useState(1);
   const [dnTotalPages, setDnTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("invoices");
 
   // Search states — Invoices
   const [invSearchInput, setInvSearchInput] = useState("");
@@ -58,8 +59,13 @@ export default function FinancePage() {
   // Invoice detail modal
   const [detailModal, setDetailModal] = useState<{ open: boolean; invoice: any; loading: boolean }>({ open: false, invoice: null, loading: false });
 
-  useEffect(() => { fetchInvoices(); }, [invPage, invSearch, invStatusFilter]); // eslint-disable-line
-  useEffect(() => { fetchDebitNotes(); }, [dnPage, dnSearch, dnStatusFilter, dnTypeFilter]); // eslint-disable-line
+  useEffect(() => { 
+    if (activeTab === "invoices") fetchInvoices(); 
+  }, [activeTab, invPage, invSearch, invStatusFilter]); // eslint-disable-line
+  
+  useEffect(() => { 
+    if (activeTab === "debit-notes") fetchDebitNotes(); 
+  }, [activeTab, dnPage, dnSearch, dnStatusFilter, dnTypeFilter]); // eslint-disable-line
 
   const fetchInvoices = async () => {
     setLoading(true);
@@ -133,7 +139,7 @@ export default function FinancePage() {
         <p className="text-[#6B6B6B] mt-1">Quản lý hóa đơn, thanh toán và phiếu ghi nợ</p>
       </div>
 
-      <Tabs tabs={tabs}>
+      <Tabs tabs={tabs} onTabChange={setActiveTab}>
         {(tab) => (
           <>
             {tab === "invoices" && (
