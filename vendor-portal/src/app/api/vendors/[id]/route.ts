@@ -110,3 +110,62 @@ export async function PATCH(
 
   return NextResponse.json({ success: true, data: updated });
 }
+
+// DELETE /api/vendors/:id — Soft-delete a vendor (supermarket_admin only, pending statuses only)
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session || (session.user as any)?.role !== "supermarket_admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    const { id } = await params;
+
+    const vendor = await prisma.vendor.findUnique({ where: { id, deletedAt: null } });
+    if (!vendor) {
+      return NextResponse.json({ error: "Nhà cung cấp không tồn tại" }, { status: 404 });
+    }
+
+    const deletableStatuses = ["pending_registration", "pending_review"];
+    if (!deletableStatuses.includes(vendor.status)) {
+      return NextResponse.json(
+        { error: "Chỉ có thể xóa NCC ở trạng thái Chờ đăng ký hoặc Chờ duyệt" },
+        { status: 400 }
+      );
+    }
+
+    await prisma.vendor.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    // Audit log (non-blocking)
+    try {
+      const adminUser = await prisma.user.findUnique({
+        where: { id: session.user?.id as string },
+      });
+      if (adminUser) {
+        await prisma.auditLog.create({
+          data: {
+            userId: adminUser.id,
+            action: "DELETE",
+            module: "vendors",
+            resource: "vendors",
+            resourceId: id,
+            description: `Admin xóa nhà cung cấp "${vendor.companyName}" (${vendor.taxCode})`,
+          },
+        });
+      }
+    } catch (auditErr) {
+      console.warn("Audit log failed (non-blocking):", auditErr);
+    }
+
+    return NextResponse.json({ success: true, data: { id } });
+  } catch (error: any) {
+    console.error("DELETE /api/vendors/:id error:", error);
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+  }
+}
