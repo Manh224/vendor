@@ -566,7 +566,7 @@ export default function VendorDetailPage() {
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-[#00321B] font-semibold">Danh bạ liên hệ</h3>
                   {canEdit && (
-                    <button onClick={() => setShowContactForm(!showContactForm)} className="px-4 py-2 rounded-xl bg-blue-600 text-[#00321B] text-sm font-medium hover:bg-blue-500 transition-all">
+                    <button onClick={() => setShowContactForm(!showContactForm)} className="px-4 py-2 rounded-xl bg-[#067643] text-white text-sm font-medium hover:bg-[#067643]/90 transition-all">
                       + Thêm liên hệ
                     </button>
                   )}
@@ -634,7 +634,7 @@ export default function VendorDetailPage() {
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-[#00321B] font-semibold">Giấy tờ & Chứng nhận</h3>
                   {canEdit && (
-                    <button onClick={() => setShowDocForm(!showDocForm)} className="px-4 py-2 rounded-xl bg-blue-600 text-[#00321B] text-sm font-medium hover:bg-blue-500 transition-all">
+                    <button onClick={() => setShowDocForm(!showDocForm)} className="px-4 py-2 rounded-xl bg-[#067643] text-white text-sm font-medium hover:bg-[#067643]/90 transition-all">
                       + Tải lên giấy tờ
                     </button>
                   )}
@@ -721,7 +721,7 @@ export default function VendorDetailPage() {
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-[#00321B] font-semibold">Hợp đồng</h3>
                   {isSupermarket && (
-                    <button onClick={() => setShowContractForm(!showContractForm)} className="px-4 py-2 rounded-xl bg-blue-600 text-[#00321B] text-sm font-medium hover:bg-blue-500 transition-all">
+                    <button onClick={() => setShowContractForm(!showContractForm)} className="px-4 py-2 rounded-xl bg-[#067643] text-white text-sm font-medium hover:bg-[#067643]/90 transition-all">
                       + Tạo hợp đồng
                     </button>
                   )}
