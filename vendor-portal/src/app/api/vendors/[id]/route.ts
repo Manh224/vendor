@@ -20,32 +20,48 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const vendor = await prisma.vendor.findUnique({
-    where: { id, deletedAt: null },
-    include: {
-      contacts: { orderBy: { isPrimary: "desc" } },
-      documents: {
-        include: { documentType: true, reviewer: { select: { fullName: true } } },
-        orderBy: { createdAt: "desc" },
+  const [vendor, contacts, documents, contracts, users] = await Promise.all([
+    prisma.vendor.findUnique({
+      where: { id, deletedAt: null },
+      include: {
+        createdByUser: { select: { fullName: true } },
+        statusChangedByUser: { select: { fullName: true } },
       },
-      contracts: {
-        where: { deletedAt: null },
-        orderBy: { createdAt: "desc" },
-      },
-      users: {
-        where: { deletedAt: null },
-        select: { id: true, fullName: true, email: true, phone: true, isActive: true },
-      },
-      createdByUser: { select: { fullName: true } },
-      statusChangedByUser: { select: { fullName: true } },
-    },
-  });
+    }),
+    prisma.contact.findMany({
+      where: { vendorId: id },
+      orderBy: { isPrimary: "desc" },
+    }),
+    prisma.vendorDocument.findMany({
+      where: { vendorId: id },
+      include: { documentType: true, reviewer: { select: { fullName: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.contract.findMany({
+      where: { vendorId: id, deletedAt: null },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.user.findMany({
+      where: { vendorId: id, deletedAt: null },
+      select: { id: true, fullName: true, email: true, phone: true, isActive: true },
+    }),
+  ]);
 
   if (!vendor) {
     return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ success: true, data: vendor });
+  // Gộp dữ liệu lại đúng chuẩn cũ để Frontend không bị vỡ UI
+  return NextResponse.json({ 
+    success: true, 
+    data: { 
+      ...vendor, 
+      contacts, 
+      documents, 
+      contracts, 
+      users 
+    } 
+  });
 }
 
 // PATCH /api/vendors/:id — Update vendor info
