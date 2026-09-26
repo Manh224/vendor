@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import useSWR from "swr";
 import Pagination from "@/components/ui/Pagination";
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 const poStatusMap: Record<string, { label: string; color: string }> = {
   new: { label: "Mới", color: "bg-blue-50 text-blue-600" },
@@ -46,35 +49,20 @@ export default function OrdersPage() {
   const user = session?.user as any;
   const isVendor = user?.side === "vendor";
 
-  const [orders, setOrders] = useState<POItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
-  useEffect(() => {
-    fetchOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, statusFilter, search]);
+  const params = new URLSearchParams({ page: String(page), pageSize: "20" });
+  if (statusFilter !== "all") params.set("status", statusFilter);
+  if (search) params.set("search", search);
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    const params = new URLSearchParams({ page: String(page), pageSize: "20" });
-    if (statusFilter !== "all") params.set("status", statusFilter);
-    if (search) params.set("search", search);
-
-    const res = await fetch(`/api/orders?${params}`);
-    const json = await res.json();
-    if (json.success) {
-      setOrders(json.data.items);
-      setTotalPages(json.data.totalPages);
-      setTotal(json.data.total);
-    }
-    setLoading(false);
-  };
+  const { data, isLoading } = useSWR(`/api/orders?${params.toString()}`, fetcher);
+  const orders = data?.data?.items || [];
+  const totalPages = data?.data?.totalPages || 1;
+  const total = data?.data?.total || 0;
+  const loading = isLoading;
 
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setPage(1); setSearch(searchInput); };
 
