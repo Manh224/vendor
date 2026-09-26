@@ -11,15 +11,20 @@ interface Tab {
 interface TabsProps {
   tabs: Tab[];
   defaultTab?: string;
+  activeTab?: string;
   onTabChange?: (key: string) => void;
   children: (activeTab: string) => React.ReactNode;
 }
 
-export default function Tabs({ tabs, defaultTab, onTabChange, children }: TabsProps) {
-  const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.key || "");
+export default function Tabs({ tabs, defaultTab, activeTab: controlledActiveTab, onTabChange, children }: TabsProps) {
+  const [internalTab, setInternalTab] = useState(defaultTab || tabs[0]?.key || "");
+  
+  const activeTab = controlledActiveTab !== undefined ? controlledActiveTab : internalTab;
 
   const handleTabChange = (key: string) => {
-    setActiveTab(key);
+    if (controlledActiveTab === undefined) {
+      setInternalTab(key);
+    }
     onTabChange?.(key);
   };
 
