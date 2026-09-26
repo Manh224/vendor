@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
+import useSWR from "swr";
 import Tabs from "@/components/ui/Tabs";
 import Pagination from "@/components/ui/Pagination";
 import Modal from "@/components/ui/Modal";
@@ -23,18 +24,15 @@ const debitStatusMap: Record<string, { label: string; color: string }> = {
   resolved: { label: "Đã xử lý", color: "bg-emerald-50 text-emerald-600" },
 };
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export default function FinancePage() {
   const { data: session } = useSession();
   const user = session?.user as any;
   const isSupermarket = user?.side === "supermarket";
 
-  const [invoices, setInvoices] = useState<any[]>([]);
-  const [debitNotes, setDebitNotes] = useState<any[]>([]);
   const [invPage, setInvPage] = useState(1);
-  const [invTotalPages, setInvTotalPages] = useState(1);
   const [dnPage, setDnPage] = useState(1);
-  const [dnTotalPages, setDnTotalPages] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("invoices");
 
   // Search states — Invoices
@@ -59,34 +57,21 @@ export default function FinancePage() {
   // Invoice detail modal
   const [detailModal, setDetailModal] = useState<{ open: boolean; invoice: any; loading: boolean }>({ open: false, invoice: null, loading: false });
 
-  useEffect(() => { 
-    if (activeTab === "invoices") fetchInvoices(); 
-  }, [activeTab, invPage, invSearch, invStatusFilter]); // eslint-disable-line
-  
-  useEffect(() => { 
-    if (activeTab === "debit-notes") fetchDebitNotes(); 
-  }, [activeTab, dnPage, dnSearch, dnStatusFilter, dnTypeFilter]); // eslint-disable-line
+  const invParams = new URLSearchParams({ page: String(invPage), pageSize: "20" });
+  if (invSearch) invParams.set("search", invSearch);
+  if (invStatusFilter) invParams.set("status", invStatusFilter);
+  const { data: invData, mutate: mutateInvoices, isLoading: invLoading } = useSWR(activeTab === "invoices" ? `/api/finance/invoices?${invParams}` : null, fetcher);
+  const invoices = invData?.data?.items || [];
+  const invTotalPages = invData?.data?.totalPages || 1;
+  const loading = invLoading;
 
-  const fetchInvoices = async () => {
-    setLoading(true);
-    const params = new URLSearchParams({ page: String(invPage), pageSize: "20" });
-    if (invSearch) params.set("search", invSearch);
-    if (invStatusFilter) params.set("status", invStatusFilter);
-    const res = await fetch(`/api/finance/invoices?${params}`);
-    const json = await res.json();
-    if (json.success) { setInvoices(json.data.items); setInvTotalPages(json.data.totalPages); }
-    setLoading(false);
-  };
-
-  const fetchDebitNotes = async () => {
-    const params = new URLSearchParams({ page: String(dnPage), pageSize: "20" });
-    if (dnSearch) params.set("search", dnSearch);
-    if (dnStatusFilter) params.set("status", dnStatusFilter);
-    if (dnTypeFilter) params.set("debitType", dnTypeFilter);
-    const res = await fetch(`/api/finance/debit-notes?${params}`);
-    const json = await res.json();
-    if (json.success) { setDebitNotes(json.data.items); setDnTotalPages(json.data.totalPages); }
-  };
+  const dnParams = new URLSearchParams({ page: String(dnPage), pageSize: "20" });
+  if (dnSearch) dnParams.set("search", dnSearch);
+  if (dnStatusFilter) dnParams.set("status", dnStatusFilter);
+  if (dnTypeFilter) dnParams.set("debitType", dnTypeFilter);
+  const { data: dnData, isLoading: dnLoading } = useSWR(activeTab === "debit-notes" ? `/api/finance/debit-notes?${dnParams}` : null, fetcher);
+  const debitNotes = dnData?.data?.items || [];
+  const dnTotalPages = dnData?.data?.totalPages || 1;
 
   const reviewInvoice = async () => {
     if (!reviewModal.invoice) return;
@@ -96,7 +81,7 @@ export default function FinancePage() {
       body: JSON.stringify({ status: reviewAction, reviewNotes }),
     });
     setReviewModal({ open: false, invoice: null }); setReviewNotes(""); setReviewing(false);
-    fetchInvoices();
+    mutateInvoices();
   };
 
   const handleInvSearch = (e: React.FormEvent) => { e.preventDefault(); setInvPage(1); setInvSearch(invSearchInput); };
@@ -268,8 +253,9 @@ export default function FinancePage() {
                         <th className="text-left px-6 py-4 text-xs font-semibold text-[#067643] uppercase">Trạng thái</th>
                       </tr></thead>
                       <tbody className="divide-y divide-green-50">
-                        {debitNotes.length === 0 ? <tr><td colSpan={6} className="px-6 py-12 text-center text-[#6B6B6B]">{hasDnFilters ? "Không tìm thấy phiếu ghi nợ phù hợp" : "Chưa có phiếu ghi nợ"}</td></tr>
-                        : debitNotes.map((dn) => {
+                        {dnLoading ? <tr><td colSpan={6} className="px-6 py-12 text-center text-[#6B6B6B]">Đang tải...</td></tr>
+                        : debitNotes.length === 0 ? <tr><td colSpan={6} className="px-6 py-12 text-center text-[#6B6B6B]">{hasDnFilters ? "Không tìm thấy phiếu ghi nợ phù hợp" : "Chưa có phiếu ghi nợ"}</td></tr>
+                        : debitNotes.map((dn: any) => {
                           const sc = debitStatusMap[dn.status] || { label: dn.status, color: "bg-gray-100 text-gray-600" };
                           return (
                             <tr key={dn.id} className="hover:bg-[#f8ffef]/60 transition-colors">
