@@ -106,17 +106,17 @@ export default function FinancePage() {
   const clearDnFilters = () => { setDnSearchInput(""); setDnSearch(""); setDnStatusFilter(""); setDnTypeFilter(""); setDnPage(1); };
 
   const fetchInvoiceDetail = async (inv: any) => {
-    setDetailModal({ open: true, invoice: null, loading: true });
+    setDetailModal({ open: true, invoice: inv, loading: true });
     try {
       const res = await fetch(`/api/finance/invoices/${inv.id}`);
       const json = await res.json();
       if (json.success) {
         setDetailModal({ open: true, invoice: json.data, loading: false });
       } else {
-        setDetailModal({ open: false, invoice: null, loading: false });
+        setDetailModal({ open: true, invoice: inv, loading: false });
       }
     } catch {
-      setDetailModal({ open: false, invoice: null, loading: false });
+      setDetailModal({ open: true, invoice: inv, loading: false });
     }
   };
 
@@ -310,9 +310,9 @@ export default function FinancePage() {
       <Modal open={detailModal.open} onClose={() => setDetailModal({ open: false, invoice: null, loading: false })}
         title={detailModal.invoice ? `Chi tiết hóa đơn ${detailModal.invoice.invoiceNumber}` : "Chi tiết hóa đơn"}
         maxWidth="max-w-4xl">
-        {detailModal.loading ? (
+        {!detailModal.invoice ? (
           <div className="py-12 text-center text-[#6B6B6B]">Đang tải...</div>
-        ) : detailModal.invoice && (() => {
+        ) : (() => {
           const inv = detailModal.invoice;
           const paymentStatusMap: Record<string, { label: string; color: string }> = {
             unpaid: { label: "Chưa thanh toán", color: "bg-red-50 text-red-600" },
@@ -385,7 +385,9 @@ export default function FinancePage() {
               </div>
 
               {/* Invoice Items */}
-              {inv.items && inv.items.length > 0 && (
+              {detailModal.loading ? (
+                <div className="py-8 text-center text-[#6B6B6B] text-sm animate-pulse">Đang tải chi tiết hàng hóa...</div>
+              ) : inv.items && inv.items.length > 0 ? (
                 <div>
                   <h4 className="text-sm font-semibold text-[#00321B] mb-3">Chi tiết hàng hóa ({inv.items.length} mục)</h4>
                   <div className="bg-white border border-green-100 rounded-xl overflow-hidden">
@@ -413,10 +415,10 @@ export default function FinancePage() {
                     </table>
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {/* Related Orders */}
-              {inv.relatedOrders && inv.relatedOrders.length > 0 && (
+              {detailModal.loading ? null : inv.relatedOrders && inv.relatedOrders.length > 0 ? (
                 <div>
                   <h4 className="text-sm font-semibold text-[#00321B] mb-3">Đơn hàng liên quan ({inv.relatedOrders.length})</h4>
                   <div className="bg-white border border-green-100 rounded-xl overflow-hidden">
@@ -443,9 +445,7 @@ export default function FinancePage() {
                     </table>
                   </div>
                 </div>
-              )}
-
-              {(!inv.relatedOrders || inv.relatedOrders.length === 0) && (
+              ) : (
                 <div className="text-center py-6 text-[#6B6B6B] text-sm bg-gray-50 rounded-xl">
                   Chưa có đơn hàng liên kết với hóa đơn này
                 </div>
