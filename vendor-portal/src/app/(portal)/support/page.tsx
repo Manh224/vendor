@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import useSWR from "swr";
 import Tabs from "@/components/ui/Tabs";
 import Pagination from "@/components/ui/Pagination";
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 import Modal from "@/components/ui/Modal";
 
 const ticketStatusMap: Record<string, { label: string; color: string }> = {
@@ -35,11 +38,7 @@ export default function SupportPage() {
   const user = session?.user as any;
   const isSupermarket = user?.side === "supermarket";
 
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [ticketPage, setTicketPage] = useState(1);
-  const [ticketTotalPages, setTicketTotalPages] = useState(1);
-  const [loading, setLoading] = useState(true);
 
   // Search & filter states
   const [searchInput, setSearchInput] = useState("");
@@ -48,6 +47,20 @@ export default function SupportPage() {
   const [priorityFilter, setPriorityFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const params = new URLSearchParams({ page: String(ticketPage), pageSize: "20" });
+  if (search) params.set("search", search);
+  if (statusFilter) params.set("status", statusFilter);
+  if (priorityFilter) params.set("priority", priorityFilter);
+  if (categoryFilter) params.set("category", categoryFilter);
+
+  const { data: ticketData, isLoading: ticketLoading, mutate: mutateTickets } = useSWR(`/api/support/tickets?${params.toString()}`, fetcher);
+  const tickets = ticketData?.data?.items || [];
+  const ticketTotalPages = ticketData?.data?.totalPages || 1;
+  const loading = ticketLoading;
+
+  const { data: annData } = useSWR(`/api/support/announcements`, fetcher);
+  const announcements = annData?.data?.items || [];
 
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
@@ -58,33 +71,12 @@ export default function SupportPage() {
   const [ticketForm, setTicketForm] = useState({ title: "", category: "general", priority: "medium", description: "" });
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => { fetchTickets(); }, [ticketPage, search, statusFilter, priorityFilter, categoryFilter]); // eslint-disable-line
-  useEffect(() => { fetchAnnouncements(); }, []); // eslint-disable-line
-
-  const fetchTickets = async () => {
-    setLoading(true);
-    const params = new URLSearchParams({ page: String(ticketPage), pageSize: "20" });
-    if (search) params.set("search", search);
-    if (statusFilter) params.set("status", statusFilter);
-    if (priorityFilter) params.set("priority", priorityFilter);
-    if (categoryFilter) params.set("category", categoryFilter);
-    const res = await fetch(`/api/support/tickets?${params}`);
-    const json = await res.json();
-    if (json.success) { setTickets(json.data.items); setTicketTotalPages(json.data.totalPages); }
-    setLoading(false);
-  };
-
-  const fetchAnnouncements = async () => {
-    const res = await fetch("/api/support/announcements");
-    const json = await res.json();
-    if (json.success) setAnnouncements(json.data.items);
-  };
-
-  const openTicket = useCallback(async (id: string) => {
-    const res = await fetch(`/api/support/tickets/${id}`);
+  const openTicket = useCallback(async (ticket: any) => {
+    setSelectedTicket(ticket);
+    setMessages([]);
+    const res = await fetch(`/api/support/tickets/${ticket.id}`);
     const json = await res.json();
     if (json.success) {
-      setSelectedTicket(json.data);
       setMessages(json.data.messages || []);
     }
   }, []);
@@ -112,7 +104,7 @@ export default function SupportPage() {
     });
     if (res.ok) {
       setCreateModal(false); setTicketForm({ title: "", category: "general", priority: "medium", description: "" });
-      fetchTickets();
+      mutateTickets();
     }
     setCreating(false);
   };
@@ -201,7 +193,7 @@ export default function SupportPage() {
                           const sc = ticketStatusMap[t.status] || { label: t.status, color: "bg-gray-100 text-gray-600" };
                           const pc = priorityMap[t.priority] || priorityMap.medium;
                           return (
-                            <div key={t.id} onClick={() => openTicket(t.id)} className={`px-6 py-4 cursor-pointer transition-colors hover:bg-[#f8ffef]/60 ${selectedTicket?.id === t.id ? "bg-[#f8ffef]" : ""}`}>
+                            <div key={t.id} onClick={() => openTicket(t)} className={`px-6 py-4 cursor-pointer transition-colors hover:bg-[#f8ffef]/60 ${selectedTicket?.id === t.id ? "bg-[#f8ffef]" : ""}`}>
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-xs font-mono text-gray-400">{t.ticketNumber}</span>
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${sc.color}`}>{sc.label}</span>
