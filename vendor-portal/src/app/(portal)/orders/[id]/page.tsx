@@ -36,7 +36,7 @@ export default function OrderDetailPage() {
 
   // GRN form
   const [showGrnForm, setShowGrnForm] = useState(false);
-  const [grnForm, setGrnForm] = useState({ grnNumber: "", receiptStatus: "full", notes: "" });
+  const [grnForm, setGrnForm] = useState<{ grnNumber: string; receiptStatus: string; notes: string; items: any[] }>({ grnNumber: "", receiptStatus: "full", notes: "", items: [] });
   const [savingGrn, setSavingGrn] = useState(false);
 
   const fetchOrder = useCallback(async () => {
@@ -74,7 +74,7 @@ export default function OrderDetailPage() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(grnForm),
     });
-    setShowGrnForm(false); setGrnForm({ grnNumber: "", receiptStatus: "full", notes: "" });
+    setShowGrnForm(false); setGrnForm({ grnNumber: "", receiptStatus: "full", notes: "", items: [] });
     setSavingGrn(false); fetchOrder();
   };
 
@@ -116,7 +116,10 @@ export default function OrderDetailPage() {
             <button onClick={() => setShowAsnForm(true)} className="px-4 py-2 rounded-xl bg-blue-600 text-[#00321B] text-sm font-medium hover:bg-blue-500 transition-all">+ Tạo ASN</button>
           )}
           {!isVendor && ["preparing", "shipped"].includes(order.status) && (
-            <button onClick={() => setShowGrnForm(true)} className="px-4 py-2 rounded-xl bg-emerald-600 text-[#00321B] text-sm font-medium hover:bg-emerald-500 transition-all">+ Nhận hàng (GRN)</button>
+            <button onClick={() => {
+              setGrnForm({ ...grnForm, items: order.items.map((i: any) => ({ poItemId: i.id, receivedQty: i.orderedQty - i.actualReceivedQty, damagedQty: 0, shortageQty: 0 })) });
+              setShowGrnForm(true);
+            }} className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500 transition-all">+ Nhận hàng (GRN)</button>
           )}
         </div>
       </div>
@@ -193,7 +196,7 @@ export default function OrderDetailPage() {
               {tab === "grn" && (
                 <div>
                   {showGrnForm && (
-                    <form onSubmit={submitGrn} className="border border-green-100 rounded-xl p-4 mb-4 space-y-3">
+                    <form onSubmit={submitGrn} className="border border-green-100 rounded-xl p-4 mb-4 space-y-4">
                       <div className="grid grid-cols-2 gap-3">
                         <input placeholder="Số GRN *" required value={grnForm.grnNumber} onChange={(e) => setGrnForm({ ...grnForm, grnNumber: e.target.value })} className={inputClass} />
                         <select value={grnForm.receiptStatus} onChange={(e) => setGrnForm({ ...grnForm, receiptStatus: e.target.value })} className={inputClass}>
@@ -202,9 +205,22 @@ export default function OrderDetailPage() {
                           <option value="rejected" className="bg-white">Từ chối nhận</option>
                         </select>
                       </div>
+                      <div className="space-y-2">
+                        <label className="text-sm text-[#00321B] font-medium block">Chi tiết số lượng nhận:</label>
+                        {order.items.map((item: any, idx: number) => (
+                          <div key={item.id} className="flex items-center gap-3">
+                            <span className="text-sm text-[#6B6B6B] w-1/3 truncate" title={item.product.name}>{item.product.name} (Cần nhận: {item.orderedQty - item.actualReceivedQty})</span>
+                            <input type="number" min="0" max={item.orderedQty - item.actualReceivedQty} required value={grnForm.items[idx]?.receivedQty ?? ""} onChange={(e) => {
+                              const newItems = [...grnForm.items];
+                              newItems[idx] = { ...newItems[idx], receivedQty: Number(e.target.value) };
+                              setGrnForm({ ...grnForm, items: newItems });
+                            }} placeholder="SL Nhận" className={`${inputClass} flex-1`} />
+                          </div>
+                        ))}
+                      </div>
                       <textarea placeholder="Ghi chú" rows={2} value={grnForm.notes} onChange={(e) => setGrnForm({ ...grnForm, notes: e.target.value })} className={inputClass} />
                       <div className="flex gap-2">
-                        <button type="submit" disabled={savingGrn} className="px-4 py-2 rounded-xl bg-emerald-600 text-[#00321B] text-sm font-medium hover:bg-emerald-500 transition-all disabled:opacity-50">{savingGrn ? "Đang tạo..." : "Tạo GRN"}</button>
+                        <button type="submit" disabled={savingGrn} className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500 transition-all disabled:opacity-50">{savingGrn ? "Đang tạo..." : "Tạo GRN"}</button>
                         <button type="button" onClick={() => setShowGrnForm(false)} className="px-4 py-2 rounded-xl bg-white/5 text-[#6B6B6B] text-sm hover:text-[#00321B] transition-all">Hủy</button>
                       </div>
                     </form>
