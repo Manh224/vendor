@@ -23,6 +23,7 @@ export default function OrderDetailPage() {
 
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("items");
 
   // Vendor response modal
   const [responseModal, setResponseModal] = useState<{ open: boolean; type: string }>({ open: false, type: "" });
@@ -119,6 +120,7 @@ export default function OrderDetailPage() {
             <button onClick={() => {
               setGrnForm({ ...grnForm, items: order.items.map((i: any) => ({ poItemId: i.id, receivedQty: i.orderedQty - i.actualReceivedQty, damagedQty: 0, shortageQty: 0 })) });
               setShowGrnForm(true);
+              setActiveTab("grn");
             }} className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500 transition-all">+ Nhận hàng (GRN)</button>
           )}
         </div>
@@ -141,7 +143,7 @@ export default function OrderDetailPage() {
 
       {/* Tabs */}
       <div className="bg-white border border-green-100 shadow-sm rounded-2xl p-6">
-        <Tabs tabs={tabs}>
+        <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab}>
           {(tab) => (
             <>
               {tab === "items" && (
